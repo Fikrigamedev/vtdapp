@@ -1,0 +1,3714 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VTD - Virtual TikTok Downloader</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #1a1a1a;
+            --bg-tertiary: #0f0f0f;
+            --container-bg: rgba(30, 30, 30, 0.8);
+            --input-bg: rgba(255, 255, 255, 0.05);
+            --input-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #fff;
+            --text-secondary: rgba(255, 255, 255, 0.6);
+            --text-tertiary: rgba(255, 255, 255, 0.4);
+            --border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        body.light-theme {
+            --bg-primary: #f5f5f5;
+            --bg-secondary: #e0e0e0;
+            --bg-tertiary: #efefef;
+            --container-bg: rgba(255, 255, 255, 0.95);
+            --input-bg: rgba(0, 0, 0, 0.05);
+            --input-border: rgba(0, 0, 0, 0.1);
+            --text-primary: #1a1a1a;
+            --text-secondary: rgba(0, 0, 0, 0.7);
+            --text-tertiary: rgba(0, 0, 0, 0.5);
+            --border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+            overflow-x: hidden;
+        }
+
+        /* ==================== NOTIFICATION BANNER ==================== */
+        .notification-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: #007bff;
+            color: white;
+            padding: 0;
+            height: 36px;
+            display: none;
+            align-items: center;
+            justify-content: flex-start;
+            z-index: 10000;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .notification-banner.show {
+            display: flex;
+        }
+
+        .notification-content {
+            white-space: nowrap;
+            font-weight: 500;
+            font-size: 14px;
+            display: inline-block;
+            padding-left: 100%;
+            animation: slideNotification 15s linear infinite;
+        }
+
+        @keyframes slideNotification {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        /* Custom Datetime Picker */
+        input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+
+        /* Donation Modal */
+        .donation-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .donation-option {
+            padding: 20px 15px;
+            background: var(--input-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .donation-option:hover {
+            background: rgba(0, 123, 255, 0.1);
+            border-color: #007bff;
+            transform: translateY(-2px);
+        }
+
+        .donation-amount {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+
+        .donation-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .donation-note {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-top: 20px;
+            padding: 15px;
+            background: var(--input-bg);
+            border-radius: 10px;
+        }
+
+        /* Theme System */
+        /* ==================== VALENTINE THEME ==================== */
+        body[data-theme="valentine"] {
+            background: linear-gradient(135deg, #1a0a0e 0%, #2d0a14 50%, #1a0a0e 100%);
+        }
+
+        body[data-theme="valentine"] .notification-banner {
+            background: #ff1744;
+        }
+
+        body[data-theme="valentine"] .download-btn {
+            background: linear-gradient(135deg, #ff1744 0%, #f50057 100%);
+        }
+
+        body[data-theme="valentine"] .download-btn:hover {
+            background: linear-gradient(135deg, #f50057 0%, #c51162 100%);
+        }
+
+        body[data-theme="valentine"] .type-btn.active {
+            background: #ff1744;
+        }
+
+        body[data-theme="valentine"] .action-icon-btn:hover {
+            background: rgba(255, 23, 68, 0.2);
+        }
+
+        body[data-theme="valentine"] .container {
+            border: 1px solid rgba(255, 23, 68, 0.3);
+        }
+
+        /* ==================== RAMADAN THEME ==================== */
+        body[data-theme="ramadan"] {
+            background: linear-gradient(135deg, #0a0a1a 0%, #14102d 50%, #0a0a1a 100%);
+        }
+
+        body[data-theme="ramadan"] .notification-banner {
+            background: #7c4dff;
+        }
+
+        body[data-theme="ramadan"] .download-btn {
+            background: linear-gradient(135deg, #7c4dff 0%, #651fff 100%);
+        }
+
+        body[data-theme="ramadan"] .download-btn:hover {
+            background: linear-gradient(135deg, #651fff 0%, #6200ea 100%);
+        }
+
+        body[data-theme="ramadan"] .type-btn.active {
+            background: #7c4dff;
+        }
+
+        body[data-theme="ramadan"] .action-icon-btn:hover {
+            background: rgba(124, 77, 255, 0.2);
+        }
+
+        body[data-theme="ramadan"] .container {
+            border: 1px solid rgba(124, 77, 255, 0.3);
+        }
+
+        /* ==================== IDUL FITRI THEME ==================== */
+        body[data-theme="idul-fitri"] {
+            background: linear-gradient(135deg, #0a1a0a 0%, #0a2d14 50%, #0a1a0a 100%);
+        }
+
+        body[data-theme="idul-fitri"] .notification-banner {
+            background: #00e676;
+        }
+
+        body[data-theme="idul-fitri"] .download-btn {
+            background: linear-gradient(135deg, #00e676 0%, #00c853 100%);
+        }
+
+        body[data-theme="idul-fitri"] .download-btn:hover {
+            background: linear-gradient(135deg, #00c853 0%, #00b248 100%);
+        }
+
+        body[data-theme="idul-fitri"] .type-btn.active {
+            background: #00e676;
+        }
+
+        body[data-theme="idul-fitri"] .action-icon-btn:hover {
+            background: rgba(0, 230, 118, 0.2);
+        }
+
+        body[data-theme="idul-fitri"] .container {
+            border: 1px solid rgba(0, 230, 118, 0.3);
+        }
+
+        /* ==================== NATAL THEME ==================== */
+        body[data-theme="natal"] {
+            background: linear-gradient(135deg, #1a0a0a 0%, #2d0a0a 50%, #1a0a0a 100%);
+        }
+
+        body[data-theme="natal"] .notification-banner {
+            background: #d50000;
+        }
+
+        body[data-theme="natal"] .download-btn {
+            background: linear-gradient(135deg, #d50000 0%, #c62828 100%);
+        }
+
+        body[data-theme="natal"] .download-btn:hover {
+            background: linear-gradient(135deg, #c62828 0%, #b71c1c 100%);
+        }
+
+        body[data-theme="natal"] .type-btn.active {
+            background: #d50000;
+        }
+
+        body[data-theme="natal"] .action-icon-btn:hover {
+            background: rgba(213, 0, 0, 0.2);
+        }
+
+        body[data-theme="natal"] .container {
+            border: 1px solid rgba(213, 0, 0, 0.3);
+        }
+
+        /* ==================== HALLOWEEN THEME ==================== */
+        body[data-theme="halloween"] {
+            background: linear-gradient(135deg, #1a0f0a 0%, #2d1a0a 50%, #1a0f0a 100%);
+        }
+
+        body[data-theme="halloween"] .notification-banner {
+            background: #ff6d00;
+        }
+
+        body[data-theme="halloween"] .download-btn {
+            background: linear-gradient(135deg, #ff6d00 0%, #ff3d00 100%);
+        }
+
+        body[data-theme="halloween"] .download-btn:hover {
+            background: linear-gradient(135deg, #ff3d00 0%, #dd2c00 100%);
+        }
+
+        body[data-theme="halloween"] .type-btn.active {
+            background: #ff6d00;
+        }
+
+        body[data-theme="halloween"] .action-icon-btn:hover {
+            background: rgba(255, 109, 0, 0.2);
+        }
+
+        body[data-theme="halloween"] .container {
+            border: 1px solid rgba(255, 109, 0, 0.3);
+        }
+
+        /* ==================== MUSIM GUGUR THEME ==================== */
+        body[data-theme="musim-gugur"] {
+            background: linear-gradient(135deg, #1a120a 0%, #2d1e0a 50%, #1a120a 100%);
+        }
+
+        body[data-theme="musim-gugur"] .notification-banner {
+            background: #ff6f00;
+        }
+
+        body[data-theme="musim-gugur"] .download-btn {
+            background: linear-gradient(135deg, #ff6f00 0%, #f57c00 100%);
+        }
+
+        body[data-theme="musim-gugur"] .download-btn:hover {
+            background: linear-gradient(135deg, #f57c00 0%, #ef6c00 100%);
+        }
+
+        body[data-theme="musim-gugur"] .type-btn.active {
+            background: #ff6f00;
+        }
+
+        body[data-theme="musim-gugur"] .action-icon-btn:hover {
+            background: rgba(255, 111, 0, 0.2);
+        }
+
+        body[data-theme="musim-gugur"] .container {
+            border: 1px solid rgba(255, 111, 0, 0.3);
+        }
+
+        /* ==================== TAHUN BARU THEME ==================== */
+        body[data-theme="tahun-baru"] {
+            background: linear-gradient(135deg, #1a1a0a 0%, #2d2d0a 50%, #1a1a0a 100%);
+        }
+
+        body[data-theme="tahun-baru"] .notification-banner {
+            background: #ffd600;
+            color: #000;
+        }
+
+        body[data-theme="tahun-baru"] .download-btn {
+            background: linear-gradient(135deg, #ffd600 0%, #ffab00 100%);
+            color: #000;
+        }
+
+        body[data-theme="tahun-baru"] .download-btn:hover {
+            background: linear-gradient(135deg, #ffab00 0%, #ff9100 100%);
+        }
+
+        body[data-theme="tahun-baru"] .type-btn.active {
+            background: #ffd600;
+            color: #000;
+        }
+
+        body[data-theme="tahun-baru"] .action-icon-btn:hover {
+            background: rgba(255, 214, 0, 0.2);
+        }
+
+        body[data-theme="tahun-baru"] .container {
+            border: 1px solid rgba(255, 214, 0, 0.3);
+        }
+
+        /* News/Event System */
+        .news-list {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .news-item {
+            display: flex;
+            gap: 15px;
+            padding: 15px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .news-item:hover {
+            background: rgba(0, 123, 255, 0.1);
+            border-color: rgba(0, 123, 255, 0.3);
+            transform: translateX(5px);
+        }
+
+        .news-thumbnail {
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .news-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .news-title {
+            color: var(--text-primary);
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .news-date {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .news-detail-image {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .news-detail-title {
+            color: var(--text-primary);
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .news-detail-date {
+            color: var(--text-secondary);
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+
+        .news-detail-content {
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .empty-news {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-news svg {
+            width: 60px;
+            height: 60px;
+            fill: var(--text-tertiary);
+            margin-bottom: 15px;
+        }
+
+        /* Image Upload */
+        .image-upload-container {
+            margin-bottom: 15px;
+        }
+
+        .image-preview {
+            width: 100%;
+            max-height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .image-preview.show {
+            display: block;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px;
+            background: var(--input-bg);
+            border: 2px dashed var(--input-border);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-label:hover {
+            background: rgba(0, 123, 255, 0.1);
+            border-color: rgba(0, 123, 255, 0.5);
+        }
+
+        .file-input-label svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+        }
+
+        /* Top Action Buttons */
+        .top-actions {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+            transition: top 0.3s ease;
+        }
+
+        .notification-banner.show ~ .top-actions,
+        body:has(.notification-banner.show) .top-actions {
+            top: 56px;
+        }
+
+        .action-icon-btn {
+            width: 45px;
+            height: 45px;
+            background: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .action-icon-btn:hover {
+            transform: scale(1.1);
+            background: rgba(0, 123, 255, 0.2);
+        }
+
+        .action-icon-btn.settings:hover {
+            transform: rotate(90deg) scale(1.1);
+        }
+
+        .action-icon-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: var(--text-primary);
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            padding-top: 80px;
+        }
+
+        .container {
+            background: var(--container-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            animation: slideUp 0.5s ease-out;
+            transition: all 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            color: var(--text-primary);
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 13px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="number"],
+        input[type="datetime-local"] {
+            width: 100%;
+            padding: 14px 18px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input[type="text"]::placeholder,
+        input[type="password"]::placeholder {
+            color: var(--text-tertiary);
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        input[type="number"]:focus,
+        input[type="datetime-local"]:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(0, 123, 255, 0.8);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        .type-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .type-btn {
+            flex: 1;
+            padding: 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .type-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .type-btn.active {
+            background: #007bff;
+            border-color: transparent;
+            color: #fff;
+            transform: scale(1.02);
+        }
+
+        .download-btn {
+            width: 100%;
+            padding: 14px;
+            background: #007bff;
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .download-btn:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 123, 255, 0.3);
+        }
+
+        .download-btn:disabled {
+            background: #4a5568;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .spinner {
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error {
+            color: #ff6b6b;
+            font-size: 13px;
+            margin-top: 8px;
+            padding: 10px 15px;
+            background: rgba(255, 107, 107, 0.1);
+            border-radius: 8px;
+            border-left: 3px solid #ff6b6b;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Result Card */
+        .result-card {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 25px;
+            display: none;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        .result-card.show {
+            display: block;
+        }
+
+        .result-header {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .result-thumbnail {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .result-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .result-title {
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .result-meta {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .meta-item svg {
+            width: 16px;
+            height: 16px;
+            fill: var(--text-secondary);
+        }
+
+        .download-links {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .download-link {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            background: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .download-link:hover {
+            background: rgba(0, 123, 255, 0.1);
+            border-color: rgba(0, 123, 255, 0.3);
+            transform: translateX(5px);
+        }
+
+        .download-quality {
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .download-size {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .download-icon {
+            width: 20px;
+            height: 20px;
+            fill: var(--text-primary);
+            transition: transform 0.3s ease;
+        }
+
+        .download-link:hover .download-icon {
+            transform: translateY(3px);
+        }
+
+        /* History Page Styles */
+
+        /* Settings Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        body.light-theme .modal {
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--container-bg);
+            border-radius: 20px;
+            padding: 25px;
+            max-width: 420px;
+            width: 90%;
+            max-height: 75vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border-color);
+            animation: modalSlideUp 0.3s ease-out;
+        }
+
+        @keyframes modalSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .close-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 59, 48, 0.2);
+            border-color: rgba(255, 59, 48, 0.5);
+            transform: rotate(90deg);
+        }
+
+        .close-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--text-primary);
+        }
+
+        .setting-group {
+            margin-bottom: 25px;
+        }
+
+        .setting-label {
+            display: block;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .setting-description {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .toggle-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .toggle-btn.active {
+            background: #007bff;
+            border-color: transparent;
+            color: #fff;
+        }
+
+        /* History Page */
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .history-item {
+            display: flex;
+            gap: 15px;
+            padding: 15px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .history-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateX(5px);
+        }
+
+        .history-thumbnail {
+            width: 70px;
+            height: 70px;
+            border-radius: 10px;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .history-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .history-title {
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            display: -webkit-box;
+            -webkit-line-clamp: 1;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .history-meta {
+            color: var(--text-secondary);
+            font-size: 12px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .history-badge {
+            background: rgba(0, 123, 255, 0.2);
+            color: #007bff;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            fill: var(--text-tertiary);
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            color: var(--text-primary);
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        /* Image Gallery */
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .gallery-item {
+            position: relative;
+            padding-bottom: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 123, 255, 0.3);
+        }
+
+        .gallery-item img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 14px;
+            background: #28a745;
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .action-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(40, 167, 69, 0.3);
+        }
+
+        .action-btn:disabled {
+            background: #4a5568;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .action-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--container-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 16px 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            z-index: 3000;
+            max-width: 90%;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .toast-icon {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .toast-icon.success {
+            fill: #28a745;
+        }
+
+        .toast-icon.error {
+            fill: #ff6b6b;
+        }
+
+        .toast-icon.info {
+            fill: #007bff;
+        }
+
+        .toast-text {
+            flex: 1;
+        }
+
+        .toast-title {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .toast-message {
+            color: var(--text-secondary);
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .toast-progress {
+            height: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-top: 12px;
+            overflow: hidden;
+        }
+
+        .toast-progress-bar {
+            height: 100%;
+            background: #007bff;
+            border-radius: 2px;
+            transition: width 0.1s linear;
+        }
+
+        /* Redeem Modal */
+        .redeem-input-group {
+            margin-top: 20px;
+        }
+
+        .redeem-result {
+            margin-top: 20px;
+            padding: 16px;
+            background: rgba(0, 123, 255, 0.1);
+            border: 2px solid rgba(0, 123, 255, 0.3);
+            border-radius: 14px;
+            display: none;
+        }
+
+        .redeem-result.show {
+            display: block;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        .redeem-result.expired {
+            background: rgba(239, 68, 68, 0.1);
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .expired-text {
+            color: #ef4444;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .expired-text svg {
+            width: 16px;
+            height: 16px;
+            fill: #ef4444;
+        }
+
+        .redeem-result-title {
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .redeem-result-title svg {
+            fill: #28a745;
+            width: 24px;
+            height: 24px;
+        }
+
+        .redeem-link-btn {
+            width: 100%;
+            padding: 14px;
+            background: #28a745;
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .redeem-link-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .redeem-link-btn:disabled {
+            background: #6b7280;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Dev Login Section */
+        .dev-login-section {
+            border-top: 1px solid var(--border-color);
+            padding-top: 20px;
+            margin-top: 20px;
+        }
+
+        .dev-status {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: var(--input-bg);
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .dev-status-text {
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .dev-status.logged-in {
+            background: rgba(40, 167, 69, 0.1);
+            border: 1px solid rgba(40, 167, 69, 0.3);
+        }
+
+        .dev-status.logged-in .dev-status-text {
+            color: #28a745;
+        }
+
+        .logout-btn {
+            padding: 6px 12px;
+            background: rgba(255, 59, 48, 0.2);
+            border: 1px solid rgba(255, 59, 48, 0.3);
+            border-radius: 8px;
+            color: #ff3b30;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 59, 48, 0.3);
+        }
+
+        /* Admin Panel */
+        .admin-panel {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .admin-panel.show {
+            display: block;
+        }
+
+        .admin-section {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .admin-section-title {
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .admin-section-title svg {
+            width: 20px;
+            height: 20px;
+            fill: #007bff;
+        }
+
+        .code-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .code-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: var(--container-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            gap: 12px;
+        }
+
+        .code-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .code-text {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 4px;
+        }
+
+        .code-link {
+            color: var(--text-secondary);
+            font-size: 12px;
+            word-break: break-all;
+        }
+
+        .delete-code-btn {
+            padding: 6px 12px;
+            background: rgba(255, 59, 48, 0.2);
+            border: 1px solid rgba(255, 59, 48, 0.3);
+            border-radius: 8px;
+            color: #ff3b30;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .delete-code-btn:hover {
+            background: rgba(255, 59, 48, 0.3);
+        }
+
+        .empty-codes {
+            text-align: center;
+            padding: 30px 20px;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        /* Download Modal Styles */
+        .download-modal-thumbnail {
+            width: 100%;
+            max-width: 200px;
+            border-radius: 12px;
+            margin: 0 auto 12px;
+            display: block;
+        }
+
+        .download-modal-title {
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            line-height: 1.4;
+            text-align: center;
+        }
+
+        .download-modal-meta {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .download-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .download-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px;
+            background: var(--input-bg);
+            border: 2px solid var(--input-border);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .download-option:hover {
+            background: rgba(0, 123, 255, 0.1);
+            border-color: rgba(0, 123, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .download-option-info {
+            flex: 1;
+        }
+
+        .download-option-label {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 3px;
+        }
+
+        .download-option-size {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .download-option-icon {
+            width: 36px;
+            height: 36px;
+            background: #007bff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .download-option:hover .download-option-icon {
+            background: #0056b3;
+            transform: scale(1.1);
+        }
+
+        .download-option-icon svg {
+            width: 18px;
+            height: 18px;
+            fill: #fff;
+        }
+
+        .processing-state {
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .processing-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(0, 123, 255, 0.2);
+            border-radius: 50%;
+            border-top-color: #007bff;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        .processing-text {
+            color: var(--text-primary);
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .processing-subtext {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .caption-box {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+            max-height: 80px;
+            overflow-y: auto;
+        }
+
+        .caption-text {
+            color: var(--text-primary);
+            font-size: 13px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .copy-caption-btn {
+            width: 100%;
+            padding: 10px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .copy-caption-btn:hover {
+            background: rgba(0, 123, 255, 0.1);
+            border-color: rgba(0, 123, 255, 0.5);
+        }
+
+        .copy-caption-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .top-actions {
+                top: 15px;
+                right: 15px;
+                gap: 8px;
+            }
+
+            .action-icon-btn {
+                width: 40px;
+                height: 40px;
+            }
+
+            .action-icon-btn svg {
+                width: 20px;
+                height: 20px;
+            }
+
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+
+            .result-thumbnail {
+                width: 60px;
+                height: 60px;
+            }
+
+            .history-thumbnail {
+                width: 60px;
+                height: 60px;
+            }
+
+            .image-gallery {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Notification Banner -->
+    <div class="notification-banner" id="notification-banner">
+        <div class="notification-content" id="notification-content"></div>
+    </div>
+
+    <!-- Top Action Buttons -->
+    <div class="top-actions">
+        <div class="action-icon-btn" onclick="openHistoryModal()">
+            <svg viewBox="0 0 24 24">
+                <path d="M13,2.05V5.08C16.39,5.57 19,8.47 19,12C19,12.9 18.82,13.75 18.5,14.54L21.12,16.07C21.68,14.83 22,13.45 22,12C22,6.82 18.05,2.55 13,2.05M12,19C8.13,19 5,15.87 5,12C5,8.47 7.61,5.57 11,5.08V2.05C5.94,2.55 2,6.81 2,12A10,10 0 0,0 12,22C15.3,22 18.23,20.39 20.05,17.91L17.45,16.38C16.17,18 14.21,19 12,19Z"/>
+            </svg>
+        </div>
+        <div class="action-icon-btn" onclick="openNewsModal()">
+            <svg viewBox="0 0 24 24">
+                <path d="M20 11H4V8h16m0 7H4v-3h16m0 7H4v-3h16M3 5v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z"/>
+            </svg>
+        </div>
+        <div class="action-icon-btn gift" onclick="openRedeemModal()">
+            <svg viewBox="0 0 24 24">
+                <path d="M20 6h-2.18c.11-.31.18-.65.18-1a2.996 2.996 0 0 0-5.5-1.65l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z"/>
+            </svg>
+        </div>
+        <div class="action-icon-btn settings" onclick="openSettings()">
+            <svg viewBox="0 0 24 24">
+                <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+            </svg>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="container">
+            <h1>VTD</h1>
+            <p class="subtitle">Virtual TikTok Downloader</p>
+            
+            <div class="type-selector">
+                <button class="type-btn active" onclick="selectType('video', this)">Video</button>
+                <button class="type-btn" onclick="selectType('audio', this)">Audio</button>
+                <button class="type-btn" onclick="selectType('slide', this)">Slide</button>
+            </div>
+
+            <div class="input-group">
+                <label>Masukkan Link TikTok</label>
+                <input type="text" id="tt-url" placeholder="Masukkan Link Disini">
+                <div class="error" id="error-video"></div>
+            </div>
+
+            <button class="download-btn" id="download-btn" onclick="downloadContent('video')">
+                <span id="btn-text">Download Video</span>
+            </button>
+
+            <div class="result-card" id="result-card">
+                <div class="result-header">
+                    <img id="result-thumbnail" class="result-thumbnail" src="" alt="Thumbnail">
+                    <div class="result-info">
+                        <div class="result-title" id="result-title"></div>
+                        <div class="result-meta">
+                            <div class="meta-item">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                </svg>
+                                <span id="result-likes">0</span>
+                            </div>
+                            <div class="meta-item">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                                </svg>
+                                <span id="result-duration">0:00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="download-links" id="download-links"></div>
+                <div class="image-gallery" id="image-gallery"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settings-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Pengaturan</div>
+                <div class="close-btn" onclick="closeSettings()">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">Tema Tampilan</label>
+                <p class="setting-description">Pilih tema yang sesuai dengan preferensi kamu</p>
+                <div class="toggle-group">
+                    <button class="toggle-btn active" id="theme-dark" onclick="setTheme('dark')">Gelap</button>
+                    <button class="toggle-btn" id="theme-light" onclick="setTheme('light')">Terang</button>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">Hapus Riwayat</label>
+                <p class="setting-description">Hapus semua riwayat download yang tersimpan</p>
+                <button class="download-btn" style="background: #dc3545; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="clearHistory()">
+                    <svg style="width: 18px; height: 18px; fill: currentColor;" viewBox="0 0 24 24">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                    </svg>
+                    <span>Hapus Semua Riwayat</span>
+                </button>
+            </div>
+
+            <div class="setting-group">
+                <label class="setting-label">Dukung Developer</label>
+                <p class="setting-description">Bantu pengembangan VTD dengan donasi</p>
+                <button class="download-btn" onclick="openDonationModal()" style="background: #ff1744; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <svg style="width: 18px; height: 18px; fill: currentColor;" viewBox="0 0 24 24">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                    <span>Donasi Sekarang</span>
+                </button>
+            </div>
+
+            <!-- Developer Login Section -->
+            <div class="dev-login-section">
+                <label class="setting-label">Developer Access</label>
+                <p class="setting-description">Login sebagai developer untuk mengakses admin panel</p>
+                
+                <div class="dev-status" id="dev-status" style="display: none;">
+                    <span class="dev-status-text" id="dev-status-text"></span>
+                    <button class="logout-btn" id="logout-btn" style="display: none;" onclick="logoutDev()">Logout</button>
+                </div>
+
+                <div id="dev-login-form">
+                    <div class="input-group">
+                        <input type="text" id="dev-username" placeholder="Username Developer">
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="dev-password" placeholder="Password">
+                    </div>
+                    <button class="download-btn" onclick="loginDev()">Login sebagai Developer</button>
+                </div>
+
+                <!-- Admin Panel -->
+                <div class="admin-panel" id="admin-panel">
+                    <div class="admin-section">
+                        <div class="admin-section-title">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                            Tambah Kode Redeem
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="new-code" placeholder="Masukkan kode unik (misal: VDVERSE2025)">
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="gift-name" placeholder="Nama hadiah (misal: Dana Kaget Rp 50.000)">
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="dana-link" placeholder="Link Hadiah (https://...)">
+                        </div>
+                        <div class="input-group">
+                            <label style="margin-bottom: 8px; font-size: 13px; color: var(--text-secondary);">Tanggal Kadaluarsa (Opsional)</label>
+                            <input type="datetime-local" id="expiry-date" placeholder="Pilih tanggal dan waktu">
+                        </div>
+                        <button class="download-btn" style="background: #28a745; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="addRedeemCode()">
+                            <svg style="width: 18px; height: 18px; fill: currentColor;" viewBox="0 0 24 24">
+                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                            </svg>
+                            <span>Tambahkan Kode</span>
+                        </button>
+                    </div>
+
+                    <div class="admin-section">
+                        <div class="admin-section-title">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                            </svg>
+                            Daftar Kode Aktif
+                        </div>
+                        <div class="code-list" id="code-list">
+                            <div class="empty-codes">Belum ada kode redeem yang ditambahkan</div>
+                        </div>
+                    </div>
+
+                    <!-- Notification Settings -->
+                    <div class="admin-section">
+                        <div class="admin-section-title">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.19 14,4.29 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1 12,23A2,2 0 0,1 10,21"/>
+                            </svg>
+                            Pengaturan Notifikasi Banner
+                        </div>
+                        <div class="input-group">
+                            <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                                <span style="font-size: 14px; color: var(--text-primary);">Aktifkan Notifikasi</span>
+                                <label class="toggle-group" style="margin: 0; width: auto;">
+                                    <button class="toggle-btn" id="notif-off" onclick="toggleNotifSetting(false)" style="padding: 6px 12px; font-size: 12px;">OFF</button>
+                                    <button class="toggle-btn active" id="notif-on" onclick="toggleNotifSetting(true)" style="padding: 6px 12px; font-size: 12px;">ON</button>
+                                </label>
+                            </label>
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="notification-text" placeholder="Teks notifikasi (contoh: 🎉 Selamat datang!)">
+                        </div>
+                        <div class="input-group">
+                            <label style="margin-bottom: 8px; font-size: 13px; color: var(--text-secondary);">Kecepatan Gerak (detik)</label>
+                            <input type="number" id="notification-speed" min="5" max="60" value="15" placeholder="15">
+                        </div>
+                        <div class="input-group">
+                            <label style="margin-bottom: 8px; font-size: 13px; color: var(--text-secondary);">Durasi Tampil (detik, 0 = selalu tampil)</label>
+                            <input type="number" id="notification-duration" min="0" max="300" value="0" placeholder="0">
+                        </div>
+                        <button class="download-btn" style="background: #007bff; display: flex; align-items: center; justify-content: center; gap: 8px;" onclick="saveNotificationSettings()">
+                            <svg style="width: 18px; height: 18px; fill: currentColor;" viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                            </svg>
+                            <span>Simpan Pengaturan Notifikasi</span>
+                        </button>
+                    </div>
+
+                    <!-- Theme Settings -->
+                    <div class="admin-section">
+                        <div class="admin-section-title">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                            </svg>
+                            Pengaturan Tema Musiman
+                        </div>
+                        <p class="setting-description">Ubah tema aplikasi sesuai musim atau perayaan. Semua pengguna akan melihat tema yang sama.</p>
+                        <div class="input-group">
+                            <label style="margin-bottom: 8px; font-size: 13px; color: var(--text-secondary);">Pilih Tema Aktif</label>
+                            <select id="theme-select" style="width: 100%; padding: 12px 15px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 10px; color: var(--text-primary); font-size: 14px;">
+                                <option value="default">🎨 Default (Biru)</option>
+                                <option value="valentine">💝 Valentine</option>
+                                <option value="ramadan">🌙 Ramadan</option>
+                                <option value="idul-fitri">🎉 Idul Fitri</option>
+                                <option value="natal">🎄 Natal</option>
+                                <option value="halloween">🎃 Halloween</option>
+                                <option value="musim-gugur">🍂 Musim Gugur</option>
+                                <option value="tahun-baru">🎆 Tahun Baru</option>
+                            </select>
+                        </div>
+                        <button class="download-btn" style="background: #007bff; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 15px;" onclick="saveThemeSettings()">
+                            <svg style="width: 18px; height: 18px; fill: currentColor;" viewBox="0 0 24 24">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                            </svg>
+                            <span>Terapkan Tema</span>
+                        </button>
+                    </div>
+
+                    <!-- News Management -->
+                    <div class="admin-section">
+                        <div class="admin-section-title">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M20 11H4V8h16m0 7H4v-3h16m0 7H4v-3h16M3 5v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z"/>
+                            </svg>
+                            Management Berita & Event
+                        </div>
+                        <p class="setting-description">Tambahkan berita atau event untuk pengguna</p>
+                        
+                        <div class="input-group">
+                            <label style="margin-bottom: 8px; font-size: 13px; color: var(--text-secondary);">Judul Event</label>
+                            <input type="text" id="news-title" placeholder="Contoh: Promo Spesial Valentine">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label style="margin-bottom: 8px; font-size: 13px; color: var(--text-secondary);">Keterangan Waktu</label>
+                            <input type="text" id="news-date" placeholder="Contoh: 14 Februari 2026">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label style="margin-bottom: 8px; font-size: 13px; color: var(--text-secondary);">Penjelasan Event</label>
+                            <textarea id="news-content" rows="4" style="width: 100%; padding: 12px 15px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 10px; color: var(--text-primary); font-size: 14px; resize: vertical;" placeholder="Tulis penjelasan lengkap tentang event..."></textarea>
+                        </div>
+                        
+                        <div class="image-upload-container">
+                            <label style="margin-bottom: 8px; font-size: 13px; color: var(--text-secondary); display: block;">Upload Foto Thumbnail (Max 30MB)</label>
+                            <div class="file-input-wrapper">
+                                <input type="file" id="news-image" accept="image/*" onchange="previewNewsImage(event)">
+                                <label for="news-image" class="file-input-label">
+                                    <svg viewBox="0 0 24 24">
+                                        <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
+                                    </svg>
+                                    <span>Pilih Foto</span>
+                                </label>
+                            </div>
+                            <img id="news-image-preview" class="image-preview" alt="Preview">
+                        </div>
+                        
+                        <button class="download-btn" style="background: #28a745; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 15px;" onclick="addNews()">
+                            <svg style="width: 18px; height: 18px; fill: currentColor;" viewBox="0 0 24 24">
+                                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                            </svg>
+                            <span>Tambah Berita</span>
+                        </button>
+                        
+                        <div style="margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                            <label style="margin-bottom: 12px; font-size: 14px; color: var(--text-primary); font-weight: 600; display: block;">Daftar Berita Aktif</label>
+                            <div id="admin-news-list">
+                                <div class="empty-codes">Belum ada berita yang ditambahkan</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Redeem Modal -->
+    <div class="modal" id="redeem-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Redeem Hadiah 🎁</div>
+                <div class="close-btn" onclick="closeRedeemModal()">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <p class="setting-description">Masukkan kode redeem untuk mendapatkan hadiah dari developer</p>
+
+            <div class="redeem-input-group">
+                <div class="input-group">
+                    <input type="text" id="redeem-code-input" placeholder="Masukkan Kode Reedem" style="text-transform: uppercase;">
+                </div>
+                <button class="download-btn" onclick="redeemCode()" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    <svg style="width: 18px; height: 18px; fill: currentColor;" viewBox="0 0 24 24">
+                        <path d="M20 6h-2.18c.11-.31.18-.65.18-1a2.996 2.996 0 0 0-5.5-1.65l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-5-2c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM9 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm11 15H4v-2h16v2zm0-5H4V8h5.08L7 10.83 8.62 12 11 8.76l1-1.36 1 1.36L15.38 12 17 10.83 14.92 8H20v6z"/>
+                    </svg>
+                    <span>Redeem Sekarang</span>
+                </button>
+            </div>
+
+            <div class="redeem-result" id="redeem-result">
+                <div class="redeem-result-title">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    </svg>
+                    Kode Valid!
+                </div>
+                <p class="setting-description" style="margin-bottom: 10px;" id="gift-description">Selamat! Kamu mendapatkan hadiah dari developer</p>
+                <div class="input-group">
+                    <input type="text" id="redeem-link-display" readonly style="background: var(--input-bg); cursor: text;">
+                </div>
+                <div id="expiry-notice"></div>
+                <button class="download-btn" style="background: #17a2b8; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px;" onclick="copyRedeemLink()">
+                    <svg style="width: 18px; height: 18px; fill: currentColor;" viewBox="0 0 24 24">
+                        <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                    </svg>
+                    <span>Salin Link</span>
+                </button>
+                <button class="redeem-link-btn" id="redeem-claim-btn" onclick="claimRedeem()">
+                    <svg style="width: 20px; height: 20px; fill: currentColor;" viewBox="0 0 24 24">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    </svg>
+                    <span>Klaim Hadiah</span>
+                </button>
+            </div>
+
+            <!-- Success Message After Claim -->
+            <div class="redeem-result" id="redeem-success" style="background: rgba(40, 167, 69, 0.15); border-color: rgba(40, 167, 69, 0.4);">
+                <div class="redeem-result-title" style="color: #28a745;">
+                    <svg viewBox="0 0 24 24" style="fill: #28a745;">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                    </svg>
+                    Klaim Berhasil!
+                </div>
+                <p class="setting-description" style="margin-bottom: 0; color: var(--text-primary); font-size: 14px;" id="success-message">Selamat anda mendapatkan hadiah dari developer</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Download Modal -->
+    <div class="modal" id="download-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Download TikTok</div>
+                <div class="close-btn" onclick="closeDownloadModal()">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Processing State -->
+            <div class="processing-state" id="processing-state">
+                <div class="processing-spinner"></div>
+                <div class="processing-text">Sedang Memproses Video</div>
+                <div class="processing-subtext">Mohon tunggu sebentar...</div>
+            </div>
+
+            <!-- Download Options (hidden initially) -->
+            <div id="download-content" style="display: none;">
+                <img id="modal-thumbnail" class="download-modal-thumbnail" src="" alt="Thumbnail">
+                <div class="download-modal-title" id="modal-title"></div>
+                <div class="download-modal-meta">
+                    <div class="meta-item">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                        </svg>
+                        <span id="modal-likes">0</span>
+                    </div>
+                    <div class="meta-item">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                        <span id="modal-duration">0:00</span>
+                    </div>
+                </div>
+
+                <!-- Caption Section -->
+                <div id="caption-section" style="display: none;">
+                    <div class="caption-box">
+                        <div class="caption-text" id="modal-caption"></div>
+                    </div>
+                    <button class="copy-caption-btn" onclick="copyCaption()">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+                        </svg>
+                        Salin Caption
+                    </button>
+                </div>
+
+                <div class="download-options" id="modal-download-options"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal" id="history-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Riwayat Download</div>
+                <div class="close-btn" onclick="closeHistoryModal()">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="history-list" id="history-list">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M13,2.05V5.08C16.39,5.57 19,8.47 19,12C19,12.9 18.82,13.75 18.5,14.54L21.12,16.07C21.68,14.83 22,13.45 22,12C22,6.82 18.05,2.55 13,2.05M12,19C8.13,19 5,15.87 5,12C5,8.47 7.61,5.57 11,5.08V2.05C5.94,2.55 2,6.81 2,12A10,10 0 0,0 12,22C15.3,22 18.23,20.39 20.05,17.91L17.45,16.38C16.17,18 14.21,19 12,19Z"/>
+                    </svg>
+                    <h3>Belum Ada Riwayat</h3>
+                    <p>Download video atau audio untuk melihat riwayatnya disini</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <div class="toast-content">
+            <svg class="toast-icon" id="toast-icon" viewBox="0 0 24 24">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+            <div class="toast-text">
+                <div class="toast-title" id="toast-title">Success</div>
+                <div class="toast-message" id="toast-message">Operation completed successfully</div>
+            </div>
+        </div>
+        <div class="toast-progress">
+            <div class="toast-progress-bar" id="toast-progress-bar"></div>
+        </div>
+    </div>
+
+    <script>
+        // ================== FIREBASE CONFIG ==================
+        const firebaseConfig = {
+            apiKey: "AIzaSyCD1cOjwlAaxMf8jxorhR8nWch3vPL1ENc",
+            authDomain: "vtd-v2.firebaseapp.com",
+            databaseURL: "https://vtd-v2-default-rtdb.asia-southeast1.firebasedatabase.app/",
+            projectId: "vtd-v2",
+            storageBucket: "vtd-v2.firebasestorage.app",
+            messagingSenderId: "625437339096",
+            appId: "1:625437339096:web:8e1fa83319f40ef09ed6ad"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // ================== GLOBAL VARIABLES ==================
+        let currentType = 'video';
+        let currentRedeemLink = '';
+        let currentGiftName = '';
+        let isDevLoggedIn = false;
+        let notificationHideTimeout = null;
+
+        // ================== INITIALIZATION ==================
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-theme');
+            document.getElementById('theme-light').classList.add('active');
+            document.getElementById('theme-dark').classList.remove('active');
+        }
+
+        // Check if developer is logged in
+        checkDevLogin();
+        
+        // Load notification settings
+        loadNotificationSettings();
+        
+        // Load theme settings
+        loadThemeSettings();
+
+        // ================== NOTIFICATION BANNER FUNCTIONS ==================
+        function showNotificationBanner(text, speed, duration) {
+            const banner = document.getElementById('notification-banner');
+            const content = document.getElementById('notification-content');
+            
+            content.textContent = text;
+            content.style.animation = `slideNotification ${speed}s linear infinite`;
+            
+            banner.classList.add('show');
+            
+            if (duration > 0) {
+                if (notificationHideTimeout) {
+                    clearTimeout(notificationHideTimeout);
+                }
+                notificationHideTimeout = setTimeout(() => {
+                    banner.classList.remove('show');
+                }, duration * 1000);
+            }
+        }
+
+        function loadNotificationSettings() {
+            database.ref('settings/notification').once('value').then((snapshot) => {
+                const data = snapshot.val();
+                if (data && data.enabled) {
+                    showNotificationBanner(
+                        data.text || '🎉 Selamat datang di VTD!',
+                        data.speed || 15,
+                        data.duration || 0
+                    );
+                }
+            });
+        }
+
+        function saveNotificationSettings() {
+            if (!isDevLoggedIn) {
+                showToast('Error', 'Anda harus login sebagai developer', 'error');
+                return;
+            }
+
+            const enabled = document.getElementById('notif-on').classList.contains('active');
+            const text = document.getElementById('notification-text').value.trim();
+            const speed = parseInt(document.getElementById('notification-speed').value) || 15;
+            const duration = parseInt(document.getElementById('notification-duration').value) || 0;
+
+            if (enabled && !text) {
+                showToast('Error', 'Teks notifikasi harus diisi', 'error');
+                return;
+            }
+
+            database.ref('settings/notification').set({
+                enabled: enabled,
+                text: text,
+                speed: speed,
+                duration: duration
+            }).then(() => {
+                showToast('Berhasil', 'Pengaturan notifikasi berhasil disimpan', 'success');
+                const banner = document.getElementById('notification-banner');
+                banner.classList.remove('show');
+                if (enabled) {
+                    showNotificationBanner(text, speed, duration);
+                }
+            }).catch((error) => {
+                console.error('Error saving notification:', error);
+                showToast('Error', 'Gagal menyimpan pengaturan', 'error');
+            });
+        }
+
+        function toggleNotifSetting(enabled) {
+            const onBtn = document.getElementById('notif-on');
+            const offBtn = document.getElementById('notif-off');
+            
+            if (enabled) {
+                onBtn.classList.add('active');
+                offBtn.classList.remove('active');
+            } else {
+                offBtn.classList.add('active');
+                onBtn.classList.remove('active');
+            }
+        }
+
+        function loadNotificationSettingsForAdmin() {
+            database.ref('settings/notification').once('value').then((snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    toggleNotifSetting(data.enabled || false);
+                    document.getElementById('notification-text').value = data.text || '';
+                    document.getElementById('notification-speed').value = data.speed || 15;
+                    document.getElementById('notification-duration').value = data.duration || 0;
+                }
+            });
+            
+            // Load theme settings
+            loadThemeSettingsForAdmin();
+        }
+
+        // ================== DONATION FUNCTIONS ==================
+        function openDonationModal() {
+            document.getElementById('donation-modal').classList.add('show');
+        }
+
+        function closeDonationModal() {
+            document.getElementById('donation-modal').classList.remove('show');
+        }
+
+        function donate(amount, link) {
+            showToast('Terima Kasih!', `Membuka link donasi Rp ${amount.toLocaleString('id-ID')}...`, 'success');
+            setTimeout(() => {
+                window.open(link, '_blank');
+                closeDonationModal();
+            }, 500);
+        }
+
+        // ================== THEME SYSTEM FUNCTIONS ==================
+        function loadThemeSettings() {
+            database.ref('settings/theme').once('value').then((snapshot) => {
+                const data = snapshot.val();
+                if (data && data.activeTheme) {
+                    applyTheme(data.activeTheme);
+                }
+            });
+        }
+
+        function applyTheme(theme) {
+            const banner = document.getElementById('notification-banner');
+            document.body.setAttribute('data-theme', theme);
+            if (banner) {
+                banner.setAttribute('data-theme', theme);
+            }
+        }
+
+        function saveThemeSettings() {
+            if (!isDevLoggedIn) {
+                showToast('Error', 'Anda harus login sebagai developer', 'error');
+                return;
+            }
+
+            const theme = document.getElementById('theme-select').value;
+
+            database.ref('settings/theme').set({
+                activeTheme: theme,
+                updatedAt: new Date().toISOString(),
+                updatedBy: localStorage.getItem('devSession')
+            }).then(() => {
+                showToast('Berhasil', 'Tema berhasil diubah untuk semua pengguna!', 'success');
+                applyTheme(theme);
+            }).catch((error) => {
+                console.error('Error saving theme:', error);
+                showToast('Error', 'Gagal menyimpan tema', 'error');
+            });
+        }
+
+        function loadThemeSettingsForAdmin() {
+            database.ref('settings/theme').once('value').then((snapshot) => {
+                const data = snapshot.val();
+                if (data && data.activeTheme) {
+                    document.getElementById('theme-select').value = data.activeTheme;
+                }
+            });
+        }
+
+        // ================== NEWS FUNCTIONS ==================
+        function openNewsModal() {
+            document.getElementById('news-modal').classList.add('show');
+            loadNewsList();
+        }
+
+        function closeNewsModal() {
+            document.getElementById('news-modal').classList.remove('show');
+        }
+
+        function openNewsDetailModal(newsId) {
+            database.ref('news/' + newsId).once('value').then((snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    const content = document.getElementById('news-detail-content');
+                    content.innerHTML = `
+                        <img src="${data.image}" class="news-detail-image" alt="${data.title}">
+                        <div class="news-detail-title">${data.title}</div>
+                        <div class="news-detail-date">${data.date}</div>
+                        <div class="news-detail-content">${data.content}</div>
+                    `;
+                    document.getElementById('news-detail-modal').classList.add('show');
+                }
+            });
+        }
+
+        function closeNewsDetailModal() {
+            document.getElementById('news-detail-modal').classList.remove('show');
+        }
+
+        function loadNewsList() {
+            database.ref('news').once('value').then((snapshot) => {
+                const newsList = document.getElementById('news-list');
+                const data = snapshot.val();
+                
+                if (data) {
+                    const newsArray = Object.keys(data).map(key => ({
+                        id: key,
+                        ...data[key]
+                    })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    
+                    newsList.innerHTML = '';
+                    newsArray.forEach(news => {
+                        const newsItem = document.createElement('div');
+                        newsItem.className = 'news-item';
+                        newsItem.onclick = () => openNewsDetailModal(news.id);
+                        newsItem.innerHTML = `
+                            <img src="${news.image}" class="news-thumbnail" alt="${news.title}">
+                            <div class="news-info">
+                                <div class="news-title">${news.title}</div>
+                                <div class="news-date">${news.date}</div>
+                            </div>
+                        `;
+                        newsList.appendChild(newsItem);
+                    });
+                } else {
+                    newsList.innerHTML = `
+                        <div class="empty-news">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M20 11H4V8h16m0 7H4v-3h16m0 7H4v-3h16M3 5v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z"/>
+                            </svg>
+                            <h3 style="margin-bottom: 8px;">Belum Ada Berita</h3>
+                            <p>Developer belum menambahkan berita atau event</p>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        function previewNewsImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Check file size (30MB = 30 * 1024 * 1024 bytes)
+                if (file.size > 30 * 1024 * 1024) {
+                    showToast('Error', 'Ukuran file maksimal 30MB', 'error');
+                    event.target.value = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('news-image-preview');
+                    preview.src = e.target.result;
+                    preview.classList.add('show');
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        async function addNews() {
+            if (!isDevLoggedIn) {
+                showToast('Error', 'Anda harus login sebagai developer', 'error');
+                return;
+            }
+
+            const title = document.getElementById('news-title').value.trim();
+            const date = document.getElementById('news-date').value.trim();
+            const content = document.getElementById('news-content').value.trim();
+            const imageFile = document.getElementById('news-image').files[0];
+
+            if (!title || !date || !content) {
+                showToast('Error', 'Judul, waktu, dan penjelasan harus diisi', 'error');
+                return;
+            }
+
+            if (!imageFile) {
+                showToast('Error', 'Foto harus diupload', 'error');
+                return;
+            }
+
+            // Show loading
+            showToast('Upload...', 'Sedang mengupload berita...', 'info', true);
+
+            // Convert image to base64
+            const reader = new FileReader();
+            
+            reader.onerror = function() {
+                showToast('Error', 'Gagal membaca file foto', 'error');
+            };
+            
+            reader.onload = async function(e) {
+                const imageBase64 = e.target.result;
+                
+                try {
+                    const newsId = 'news_' + Date.now();
+                    
+                    await database.ref('news/' + newsId).set({
+                        title: title,
+                        date: date,
+                        content: content,
+                        image: imageBase64,
+                        createdAt: new Date().toISOString(),
+                        createdBy: localStorage.getItem('devSession')
+                    });
+
+                    // Clear form
+                    document.getElementById('news-title').value = '';
+                    document.getElementById('news-date').value = '';
+                    document.getElementById('news-content').value = '';
+                    document.getElementById('news-image').value = '';
+                    document.getElementById('news-image-preview').classList.remove('show');
+                    
+                    loadAdminNewsList();
+                    showToast('Berhasil!', 'Berita berhasil ditambahkan', 'success');
+                } catch (error) {
+                    console.error('Error adding news:', error);
+                    showToast('Error', 'Terjadi kesalahan: ' + error.message, 'error');
+                }
+            };
+            
+            reader.readAsDataURL(imageFile);
+        }
+
+        async function deleteNews(newsId) {
+            if (!isDevLoggedIn) {
+                showToast('Error', 'Anda harus login sebagai developer', 'error');
+                return;
+            }
+
+            if (confirm('Hapus berita ini?')) {
+                try {
+                    await database.ref('news/' + newsId).remove();
+                    loadAdminNewsList();
+                    showToast('Berhasil!', 'Berita berhasil dihapus', 'success');
+                } catch (error) {
+                    console.error('Error deleting news:', error);
+                    showToast('Error', 'Terjadi kesalahan: ' + error.message, 'error');
+                }
+            }
+        }
+
+        function loadAdminNewsList() {
+            if (!isDevLoggedIn) return;
+
+            database.ref('news').once('value').then((snapshot) => {
+                const newsList = document.getElementById('admin-news-list');
+                const data = snapshot.val();
+                
+                if (data) {
+                    const newsArray = Object.keys(data).map(key => ({
+                        id: key,
+                        ...data[key]
+                    })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    
+                    newsList.innerHTML = '';
+                    newsArray.forEach(news => {
+                        const newsItem = document.createElement('div');
+                        newsItem.className = 'code-item';
+                        newsItem.innerHTML = `
+                            <div class="code-info">
+                                <div class="code-text">${news.title}</div>
+                                <div class="code-link" style="margin-bottom: 4px;">Waktu: ${news.date}</div>
+                                <div class="code-link" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${news.content.substring(0, 100)}...</div>
+                            </div>
+                            <button class="delete-code-btn" onclick="deleteNews('${news.id}')">Hapus</button>
+                        `;
+                        newsList.appendChild(newsItem);
+                    });
+                } else {
+                    newsList.innerHTML = '<div class="empty-codes">Belum ada berita yang ditambahkan</div>';
+                }
+            });
+        }
+
+        // ================== HISTORY MODAL ==================
+        function openHistoryModal() {
+            document.getElementById('history-modal').classList.add('show');
+            loadHistory();
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('history-modal').classList.remove('show');
+        }
+
+        // ================== TYPE SELECTOR ==================
+        function selectType(type, element) {
+            currentType = type;
+            document.querySelectorAll('.type-btn').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+
+            const btnText = document.getElementById('btn-text');
+            if (type === 'video') {
+                btnText.textContent = 'Download Video';
+            } else if (type === 'audio') {
+                btnText.textContent = 'Download Audio';
+            } else if (type === 'slide') {
+                btnText.textContent = 'Ambil Foto Slide';
+            }
+        }
+
+        // ================== SETTINGS FUNCTIONS ==================
+        function openSettings() {
+            document.getElementById('settings-modal').classList.add('show');
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').classList.remove('show');
+        }
+
+        function setTheme(theme) {
+            if (theme === 'light') {
+                document.body.classList.add('light-theme');
+                document.getElementById('theme-light').classList.add('active');
+                document.getElementById('theme-dark').classList.remove('active');
+            } else {
+                document.body.classList.remove('light-theme');
+                document.getElementById('theme-dark').classList.add('active');
+                document.getElementById('theme-light').classList.remove('active');
+            }
+            localStorage.setItem('theme', theme);
+        }
+
+        // ================== REDEEM FUNCTIONS ==================
+        function openRedeemModal() {
+            document.getElementById('redeem-modal').classList.add('show');
+            document.getElementById('redeem-result').classList.remove('show');
+            document.getElementById('redeem-success').classList.remove('show');
+            document.getElementById('redeem-code-input').value = '';
+        }
+
+        function closeRedeemModal() {
+            document.getElementById('redeem-modal').classList.remove('show');
+        }
+
+        async function redeemCode() {
+            const code = document.getElementById('redeem-code-input').value.trim().toUpperCase();
+            
+            if (!code) {
+                showToast('Error', 'Masukkan kode redeem terlebih dahulu', 'error');
+                return;
+            }
+
+            try {
+                const snapshot = await database.ref('redeemCodes/' + code).once('value');
+                
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    const now = new Date().getTime();
+                    const expiryTime = data.expiryDate ? new Date(data.expiryDate).getTime() : null;
+                    
+                    currentRedeemLink = data.link;
+                    currentGiftName = data.giftName || 'hadiah';
+                    
+                    document.getElementById('redeem-link-display').value = currentRedeemLink;
+                    document.getElementById('gift-description').textContent = `Selamat! Kamu mendapatkan ${currentGiftName} dari developer`;
+                    
+                    const resultDiv = document.getElementById('redeem-result');
+                    const claimBtn = document.getElementById('redeem-claim-btn');
+                    const expiryNotice = document.getElementById('expiry-notice');
+                    
+                    if (expiryTime && now > expiryTime) {
+                        // Code expired
+                        resultDiv.classList.add('expired');
+                        resultDiv.classList.remove('show');
+                        setTimeout(() => resultDiv.classList.add('show'), 10);
+                        
+                        claimBtn.disabled = true;
+                        expiryNotice.innerHTML = `
+                            <div class="expired-text">
+                                <svg viewBox="0 0 24 24">
+                                    <path d="M13 13H11V7H13M13 17H11V15H13M12 2A10 10 0 0 0 2 12A10 10 0 0 0 12 22A10 10 0 0 0 22 12A10 10 0 0 0 12 2Z"/>
+                                </svg>
+                                Kode redeem telah kadaluarsa
+                            </div>
+                        `;
+                        showToast('Kode Kadaluarsa', 'Kode redeem sudah tidak bisa digunakan', 'error');
+                    } else {
+                        // Code valid
+                        resultDiv.classList.remove('expired');
+                        resultDiv.classList.add('show');
+                        claimBtn.disabled = false;
+                        
+                        if (expiryTime) {
+                            const expiryDate = new Date(expiryTime);
+                            expiryNotice.innerHTML = `
+                                <div style="color: var(--text-tertiary); font-size: 12px; margin-top: 8px; margin-bottom: 10px;">
+                                    ⏰ Berlaku hingga: ${expiryDate.toLocaleDateString('id-ID', {
+                                        day: 'numeric',
+                                        month: 'long',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })}
+                                </div>
+                            `;
+                        } else {
+                            expiryNotice.innerHTML = '';
+                        }
+                        
+                        showToast('Berhasil!', 'Kode valid! Salin link dan klaim hadiah', 'success');
+                    }
+                } else {
+                    showToast('Kode Invalid', 'Kode redeem tidak ditemukan atau sudah tidak aktif', 'error');
+                }
+            } catch (error) {
+                console.error('Error redeeming code:', error);
+                showToast('Error', 'Terjadi kesalahan saat memvalidasi kode', 'error');
+            }
+        }
+
+        function copyRedeemLink() {
+            const linkInput = document.getElementById('redeem-link-display');
+            linkInput.select();
+            linkInput.setSelectionRange(0, 99999); // For mobile devices
+            
+            try {
+                document.execCommand('copy');
+                showToast('Link Disalin', 'Link hadiah berhasil disalin ke clipboard', 'success');
+            } catch (err) {
+                // Fallback for modern browsers
+                navigator.clipboard.writeText(currentRedeemLink).then(() => {
+                    showToast('Link Disalin', 'Link hadiah berhasil disalin ke clipboard', 'success');
+                }).catch(() => {
+                    showToast('Error', 'Gagal menyalin link', 'error');
+                });
+            }
+        }
+
+        function claimRedeem() {
+            if (currentRedeemLink) {
+                // Open link in new tab
+                window.open(currentRedeemLink, '_blank');
+                
+                // Hide the redeem form and show success message
+                document.getElementById('redeem-result').classList.remove('show');
+                document.getElementById('redeem-success').classList.add('show');
+                document.getElementById('success-message').textContent = `Selamat anda mendapatkan ${currentGiftName} dari developer`;
+                
+                // Show toast
+                showToast('Selamat!', `Anda mendapatkan ${currentGiftName} dari developer`, 'success', false, 3000);
+            }
+        }
+
+        // ================== DEVELOPER LOGIN FUNCTIONS ==================
+        function checkDevLogin() {
+            const devSession = localStorage.getItem('devSession');
+            if (devSession) {
+                isDevLoggedIn = true;
+                updateDevStatus(true);
+                loadRedeemCodes();
+            }
+        }
+
+        async function loginDev() {
+            const username = document.getElementById('dev-username').value.trim();
+            const password = document.getElementById('dev-password').value.trim();
+
+            if (!username || !password) {
+                showToast('Error', 'Username dan password harus diisi', 'error');
+                return;
+            }
+
+            // Check credentials
+            if (username === 'fikrieverly' && password === 'akunadmin#1') {
+                isDevLoggedIn = true;
+                localStorage.setItem('devSession', username);
+                updateDevStatus(true);
+                loadRedeemCodes();
+                showToast('Login Berhasil', 'Selamat datang, Developer!', 'success');
+            } else {
+                showToast('Login Gagal', 'Username atau password salah', 'error');
+            }
+        }
+
+        function logoutDev() {
+            isDevLoggedIn = false;
+            localStorage.removeItem('devSession');
+            updateDevStatus(false);
+            showToast('Logout Berhasil', 'Anda telah keluar dari akun developer', 'info');
+        }
+
+        function updateDevStatus(loggedIn) {
+            const statusDiv = document.getElementById('dev-status');
+            const statusText = document.getElementById('dev-status-text');
+            const logoutBtn = document.getElementById('logout-btn');
+            const loginForm = document.getElementById('dev-login-form');
+            const adminPanel = document.getElementById('admin-panel');
+
+            if (loggedIn) {
+                statusDiv.style.display = 'flex';
+                statusDiv.classList.add('logged-in');
+                statusText.textContent = 'Login sebagai Developer';
+                logoutBtn.style.display = 'block';
+                loginForm.style.display = 'none';
+                adminPanel.classList.add('show');
+                loadNotificationSettingsForAdmin();
+                loadAdminNewsList();
+            } else {
+                statusDiv.style.display = 'none';
+                statusDiv.classList.remove('logged-in');
+                statusText.textContent = '';
+                logoutBtn.style.display = 'none';
+                loginForm.style.display = 'block';
+                adminPanel.classList.remove('show');
+            }
+        }
+
+        // ================== ADMIN PANEL FUNCTIONS ==================
+        async function addRedeemCode() {
+            if (!isDevLoggedIn) {
+                showToast('Error', 'Anda harus login sebagai developer', 'error');
+                return;
+            }
+
+            const code = document.getElementById('new-code').value.trim().toUpperCase();
+            const giftName = document.getElementById('gift-name').value.trim();
+            const link = document.getElementById('dana-link').value.trim();
+            const expiryDate = document.getElementById('expiry-date').value;
+
+            if (!code || !giftName || !link) {
+                showToast('Error', 'Kode, nama hadiah, dan link harus diisi', 'error');
+                return;
+            }
+
+            // Validate that it's a proper URL
+            try {
+                new URL(link);
+            } catch (e) {
+                showToast('Error', 'Link tidak valid', 'error');
+                return;
+            }
+
+            try {
+                const codeData = {
+                    link: link,
+                    giftName: giftName,
+                    createdAt: new Date().toISOString(),
+                    createdBy: localStorage.getItem('devSession')
+                };
+
+                if (expiryDate) {
+                    codeData.expiryDate = new Date(expiryDate).toISOString();
+                }
+
+                await database.ref('redeemCodes/' + code).set(codeData);
+
+                document.getElementById('new-code').value = '';
+                document.getElementById('gift-name').value = '';
+                document.getElementById('dana-link').value = '';
+                document.getElementById('expiry-date').value = '';
+                
+                loadRedeemCodes();
+                showToast('Berhasil!', 'Kode redeem berhasil ditambahkan', 'success');
+            } catch (error) {
+                console.error('Error adding code:', error);
+                showToast('Error', 'Terjadi kesalahan: ' + error.message, 'error');
+            }
+        }
+
+        async function loadRedeemCodes() {
+            if (!isDevLoggedIn) return;
+
+            try {
+                const snapshot = await database.ref('redeemCodes').once('value');
+                const codes = snapshot.val();
+                const codeList = document.getElementById('code-list');
+                
+                codeList.innerHTML = '';
+
+                if (codes) {
+                    const now = new Date().getTime();
+                    
+                    Object.keys(codes).forEach(code => {
+                        const data = codes[code];
+                        const codeItem = document.createElement('div');
+                        codeItem.className = 'code-item';
+                        
+                        let expiryHTML = '';
+                        if (data.expiryDate) {
+                            const expiryTime = new Date(data.expiryDate).getTime();
+                            const expiryDate = new Date(data.expiryDate);
+                            const isExpired = now > expiryTime;
+                            
+                            expiryHTML = `
+                                <div class="code-link" style="margin-top: 4px; color: ${isExpired ? '#ef4444' : 'var(--text-tertiary)'}; font-weight: ${isExpired ? '600' : '400'};">
+                                    ${isExpired ? '❌ Kadaluarsa: ' : '⏰ Berlaku hingga: '}
+                                    ${expiryDate.toLocaleDateString('id-ID', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })}
+                                </div>
+                            `;
+                        }
+                        
+                        codeItem.innerHTML = `
+                            <div class="code-info">
+                                <div class="code-text">${code}</div>
+                                <div class="code-link" style="margin-bottom: 4px;">Hadiah: ${data.giftName || 'Tidak ada nama'}</div>
+                                <div class="code-link">${data.link}</div>
+                                ${expiryHTML}
+                            </div>
+                            <button class="delete-code-btn" onclick="deleteRedeemCode('${code}')">Hapus</button>
+                        `;
+                        codeList.appendChild(codeItem);
+                    });
+                } else {
+                    codeList.innerHTML = '<div class="empty-codes">Belum ada kode redeem yang ditambahkan</div>';
+                }
+            } catch (error) {
+                console.error('Error loading codes:', error);
+                showToast('Error', 'Gagal memuat kode: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteRedeemCode(code) {
+            if (!isDevLoggedIn) {
+                showToast('Error', 'Anda harus login sebagai developer', 'error');
+                return;
+            }
+
+            if (confirm('Hapus kode ' + code + '?')) {
+                try {
+                    await database.ref('redeemCodes/' + code).remove();
+                    loadRedeemCodes();
+                    showToast('Berhasil!', 'Kode berhasil dihapus', 'success');
+                } catch (error) {
+                    console.error('Error deleting code:', error);
+                    showToast('Error', 'Terjadi kesalahan saat menghapus kode', 'error');
+                }
+            }
+        }
+
+        // ================== DOWNLOAD FUNCTIONS ==================
+        async function downloadContent(type) {
+            const url = document.getElementById('tt-url').value.trim();
+            
+            if (!url) {
+                showError('Masukkan link TikTok terlebih dahulu', 'error-video');
+                return;
+            }
+
+            if (!url.includes('tiktok.com') && !url.includes('vt.tiktok.com')) {
+                showError('Link tidak valid. Pastikan ini adalah link TikTok', 'error-video');
+                return;
+            }
+
+            // Open modal with processing state
+            openDownloadModal();
+            showProcessingState();
+
+            // List of APIs to try
+            const apis = [
+                {
+                    name: 'TiklyDown',
+                    url: `https://api.tiklydown.eu.org/api/download?url=${encodeURIComponent(url)}`,
+                    parser: (data) => {
+                        if (data.status === 200 && data.result) {
+                            return data.result;
+                        }
+                        return null;
+                    }
+                },
+                {
+                    name: 'TikWM',
+                    url: `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`,
+                    parser: (data) => {
+                        if (data.code === 0 && data.data) {
+                            return {
+                                title: data.data.title || 'TikTok Video',
+                                cover: data.data.cover || data.data.origin_cover,
+                                duration: data.data.duration || 0,
+                                likes: data.data.digg_count || 0,
+                                video: {
+                                    noWatermark: data.data.play || data.data.wmplay,
+                                    watermark: data.data.wmplay
+                                },
+                                music: data.data.music,
+                                images: data.data.images || []
+                            };
+                        }
+                        return null;
+                    }
+                },
+                {
+                    name: 'SnapTik',
+                    url: `https://api.snaptik.site/api/download?url=${encodeURIComponent(url)}`,
+                    parser: (data) => {
+                        if (data.status === 'success' && data.data) {
+                            return {
+                                title: data.data.title || 'TikTok Video',
+                                cover: data.data.cover || data.data.thumbnail,
+                                duration: data.data.duration || 0,
+                                likes: data.data.likes || 0,
+                                video: {
+                                    noWatermark: data.data.video_url || data.data.download_url,
+                                    watermark: data.data.video_url_watermark
+                                },
+                                music: data.data.music_url || data.data.audio,
+                                images: data.data.images || []
+                            };
+                        }
+                        return null;
+                    }
+                }
+            ];
+
+            let result = null;
+            let successApi = null;
+
+            // Try each API until one succeeds
+            for (const api of apis) {
+                try {
+                    console.log(`Trying ${api.name} API...`);
+                    const response = await fetch(api.url);
+                    const data = await response.json();
+                    result = api.parser(data);
+                    
+                    if (result) {
+                        successApi = api.name;
+                        console.log(`Success with ${api.name}`);
+                        break;
+                    }
+                } catch (error) {
+                    console.log(`${api.name} failed:`, error);
+                    continue;
+                }
+            }
+
+            if (result) {
+                // Show download options in modal
+                showDownloadOptions(result, currentType);
+            } else {
+                // Close modal and show error
+                closeDownloadModal();
+                showError('Semua API gagal. Video mungkin private/dihapus atau coba link lain', 'error-video');
+                showToast('Error', 'Tidak bisa mengunduh video ini. Coba link lain', 'error');
+            }
+        }
+
+        function openDownloadModal() {
+            document.getElementById('download-modal').classList.add('show');
+        }
+
+        function closeDownloadModal() {
+            document.getElementById('download-modal').classList.remove('show');
+            // Reset modal state
+            setTimeout(() => {
+                document.getElementById('processing-state').style.display = 'block';
+                document.getElementById('download-content').style.display = 'none';
+            }, 300);
+        }
+
+        function showProcessingState() {
+            document.getElementById('processing-state').style.display = 'block';
+            document.getElementById('download-content').style.display = 'none';
+        }
+
+        function showDownloadOptions(result, type) {
+            // Hide processing, show content
+            document.getElementById('processing-state').style.display = 'none';
+            document.getElementById('download-content').style.display = 'block';
+
+            // Set thumbnail and info
+            document.getElementById('modal-thumbnail').src = result.cover || '';
+            document.getElementById('modal-title').textContent = result.title || 'TikTok Video';
+            document.getElementById('modal-likes').textContent = formatNumber(result.likes || 0);
+            document.getElementById('modal-duration').textContent = formatDuration(result.duration || 0);
+
+            // Handle caption - remove hashtags
+            const caption = result.title || '';
+            const captionWithoutHashtags = caption.replace(/#\S+/g, '').trim();
+            if (captionWithoutHashtags) {
+                document.getElementById('modal-caption').textContent = captionWithoutHashtags;
+                document.getElementById('caption-section').style.display = 'block';
+            } else {
+                document.getElementById('caption-section').style.display = 'none';
+            }
+
+            // Clear previous options
+            const optionsDiv = document.getElementById('modal-download-options');
+            optionsDiv.innerHTML = '';
+
+            // Add download options based on type
+            if (type === 'video') {
+                if (result.video && result.video.noWatermark) {
+                    addModalDownloadOption('HD Tanpa Watermark', 'Video berkualitas tinggi', result.video.noWatermark, result.cover, result.title, 'video');
+                }
+                if (result.video && result.video.watermark) {
+                    addModalDownloadOption('HD Dengan Watermark', 'Video dengan logo TikTok', result.video.watermark, result.cover, result.title, 'video');
+                }
+            } else if (type === 'audio') {
+                if (result.music) {
+                    addModalDownloadOption('Audio MP3', 'Audio berkualitas tinggi', result.music, result.cover, result.title, 'audio');
+                }
+            } else if (type === 'slide') {
+                if (result.images && result.images.length > 0) {
+                    result.images.forEach((img, index) => {
+                        addModalDownloadOption(`Foto ${index + 1}`, `Gambar ${index + 1} dari ${result.images.length}`, img, img, result.title, 'foto');
+                    });
+                    // Add download all button
+                    addDownloadAllOption(result.images, result.title);
+                }
+            }
+        }
+
+        function copyCaption() {
+            const caption = document.getElementById('modal-caption').textContent;
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(caption).then(() => {
+                    showToast('Berhasil', 'Caption berhasil disalin', 'success');
+                }).catch(() => {
+                    // Fallback
+                    fallbackCopyCaption(caption);
+                });
+            } else {
+                fallbackCopyCaption(caption);
+            }
+        }
+
+        function fallbackCopyCaption(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('Berhasil', 'Caption berhasil disalin', 'success');
+            } catch (err) {
+                showToast('Error', 'Gagal menyalin caption', 'error');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function addModalDownloadOption(label, description, url, thumbnail, title, mediaType) {
+            const optionsDiv = document.getElementById('modal-download-options');
+            
+            const option = document.createElement('div');
+            option.className = 'download-option';
+            option.onclick = async () => {
+                const filename = `tiktok-${mediaType}-${Date.now()}${mediaType === 'video' ? '.mp4' : mediaType === 'audio' ? '.mp3' : '.jpg'}`;
+                
+                // Show downloading toast
+                showToast('Download Dimulai', 'Tunggu sebentar...', 'info', true, 3000);
+                
+                const success = await executeDownload(url, filename);
+                
+                if (success) {
+                    addToHistory({
+                        url: url,
+                        filename: filename,
+                        thumbnail: thumbnail,
+                        title: title,
+                        type: mediaType.charAt(0).toUpperCase() + mediaType.slice(1),
+                        date: new Date().toISOString()
+                    });
+                    
+                    showToast('Download Berhasil', 'File berhasil diunduh!', 'success', false, 2000);
+                    // Keep modal open, don't close
+                } else {
+                    showToast('Perhatian', 'File terbuka di tab baru', 'info', false, 3000);
+                }
+            };
+
+            option.innerHTML = `
+                <div class="download-option-info">
+                    <div class="download-option-label">${label}</div>
+                    <div class="download-option-size">${description}</div>
+                </div>
+                <div class="download-option-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                    </svg>
+                </div>
+            `;
+
+            optionsDiv.appendChild(option);
+        }
+
+        function addDownloadAllOption(images, title) {
+            const optionsDiv = document.getElementById('modal-download-options');
+            
+            const option = document.createElement('div');
+            option.className = 'download-option';
+            option.style.borderColor = '#28a745';
+            option.onclick = async () => {
+                showToast('Memulai Download', `Mendownload ${images.length} foto...`, 'info', true, images.length * 1500);
+
+                for (let i = 0; i < images.length; i++) {
+                    await executeDownload(images[i], `tiktok-photo-${i + 1}.jpg`);
+                    
+                    addToHistory({
+                        url: images[i],
+                        filename: `tiktok-photo-${i + 1}.jpg`,
+                        thumbnail: images[i],
+                        title: title,
+                        type: 'Foto',
+                        date: new Date().toISOString()
+                    });
+                    
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+
+                showToast('Download Selesai', `${images.length} foto berhasil diunduh!`, 'success', false, 2000);
+                // Keep modal open
+            };
+
+            option.innerHTML = `
+                <div class="download-option-info">
+                    <div class="download-option-label">Download Semua (${images.length} Foto)</div>
+                    <div class="download-option-size">Unduh semua foto sekaligus</div>
+                </div>
+                <div class="download-option-icon" style="background: #28a745;">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                    </svg>
+                </div>
+            `;
+
+            optionsDiv.appendChild(option);
+        }
+
+        function displayVideoResult(result) {
+            const resultCard = document.getElementById('result-card');
+            const linksDiv = document.getElementById('download-links');
+            
+            // Set thumbnail and info
+            document.getElementById('result-thumbnail').src = result.cover || '';
+            document.getElementById('result-title').textContent = result.title || 'TikTok Video';
+            document.getElementById('result-likes').textContent = formatNumber(result.likes || 0);
+            document.getElementById('result-duration').textContent = formatDuration(result.duration || 0);
+
+            // Clear previous links
+            linksDiv.innerHTML = '';
+
+            // Add download links
+            if (result.video && result.video.noWatermark) {
+                addDownloadLink('HD Tanpa Watermark', 'MP4', result.video.noWatermark, result.cover, result.title);
+            }
+            if (result.video && result.video.watermark) {
+                addDownloadLink('HD Dengan Watermark', 'MP4', result.video.watermark, result.cover, result.title);
+            }
+
+            resultCard.classList.add('show');
+        }
+
+        function displayAudioResult(result) {
+            const resultCard = document.getElementById('result-card');
+            const linksDiv = document.getElementById('download-links');
+            
+            document.getElementById('result-thumbnail').src = result.cover || '';
+            document.getElementById('result-title').textContent = result.title || 'TikTok Audio';
+            document.getElementById('result-likes').textContent = formatNumber(result.likes || 0);
+            document.getElementById('result-duration').textContent = formatDuration(result.duration || 0);
+
+            linksDiv.innerHTML = '';
+
+            if (result.music) {
+                addDownloadLink('Audio MP3', 'MP3', result.music, result.cover, result.title);
+            }
+
+            resultCard.classList.add('show');
+        }
+
+        function displayPhotoResult(result) {
+            const resultCard = document.getElementById('result-card');
+            const linksDiv = document.getElementById('download-links');
+            const gallery = document.getElementById('image-gallery');
+            
+            document.getElementById('result-thumbnail').src = result.cover || '';
+            document.getElementById('result-title').textContent = result.title || 'TikTok Slide';
+            document.getElementById('result-likes').textContent = formatNumber(result.images?.length || 0) + ' Foto';
+            document.getElementById('result-duration').textContent = formatDuration(result.duration || 0);
+            
+            linksDiv.innerHTML = '';
+            gallery.innerHTML = '';
+
+            if (result.images && result.images.length > 0) {
+                // Add gallery items
+                result.images.forEach((img, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'gallery-item';
+                    item.innerHTML = `<img src="${img}" alt="Photo ${index + 1}">`;
+                    item.onclick = () => window.open(img, '_blank');
+                    gallery.appendChild(item);
+
+                    // Add individual download link
+                    addDownloadLink(`Foto ${index + 1}`, 'IMG', img, img, result.title);
+                });
+
+                // Add batch download button
+                addBatchDownloadButton(result.images, result.title);
+            }
+
+            resultCard.classList.add('show');
+        }
+
+        function addDownloadLink(label, typeLabel, url, thumbnail, title) {
+            const linksDiv = document.getElementById('download-links');
+            
+            let filename = 'tiktok-';
+            let extension = '';
+            let mediaType = 'file';
+            
+            if (currentType === 'video') {
+                filename += 'video';
+                extension = '.mp4';
+                mediaType = 'video';
+            } else if (currentType === 'audio') {
+                filename += 'audio';
+                extension = '.mp3';
+                mediaType = 'audio';
+            } else if (currentType === 'slide') {
+                filename += 'photo';
+                extension = '.jpg';
+                mediaType = 'foto';
+            }
+            
+            if (typeLabel && typeLabel !== 'MP3' && typeLabel !== 'IMG') {
+                filename += '-' + typeLabel.toLowerCase();
+            }
+            
+            filename += extension;
+            
+            const link = document.createElement('div');
+            link.className = 'download-link';
+            link.onclick = async () => {
+                showToast('Download Dimulai', `Mengunduh ${mediaType}...`, 'info', true, 5000);
+                
+                const success = await executeDownload(url, filename);
+                
+                if (success) {
+                    addToHistory({
+                        url: url,
+                        filename: filename,
+                        thumbnail: thumbnail,
+                        title: title,
+                        type: mediaType.charAt(0).toUpperCase() + mediaType.slice(1),
+                        date: new Date().toISOString()
+                    });
+                    
+                    showToast('Download Berhasil', 'File berhasil diunduh! Cek folder Download Anda.', 'success', false, 3000);
+                } else {
+                    showToast('Perhatian', 'File terbuka di tab baru. Klik kanan → Save As untuk menyimpan.', 'info', false, 5000);
+                }
+            };
+            link.innerHTML = `
+                <span>
+                    <div class="download-quality">${label}</div>
+                    <div class="download-size">${typeLabel}</div>
+                </span>
+                <svg class="download-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                </svg>
+            `;
+            linksDiv.appendChild(link);
+        }
+
+        function addBatchDownloadButton(images, title) {
+            const linksDiv = document.getElementById('download-links');
+            
+            const btn = document.createElement('button');
+            btn.className = 'action-btn';
+            btn.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+                </svg>
+                <span>Download Semua (${images.length})</span>
+            `;
+            btn.onclick = () => downloadAllPhotos(images, title);
+            linksDiv.appendChild(btn);
+        }
+
+        async function downloadAllPhotos(images, title) {
+            const btn = event.target.closest('.action-btn');
+            const originalContent = btn.innerHTML;
+            
+            btn.disabled = true;
+            btn.innerHTML = `
+                <svg viewBox="0 0 24 24" style="animation: spin 1s linear infinite;" fill="currentColor">
+                    <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2" opacity="0.3"/>
+                    <path d="M12 2 A10 10 0 0 1 22 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span>Mendownload...</span>
+            `;
+
+            showToast('Memulai Download', `Mendownload ${images.length} foto...`, 'info', true, images.length * 1500);
+
+            for (let i = 0; i < images.length; i++) {
+                await executeDownload(images[i], `tiktok-photo-${i + 1}.jpg`);
+                
+                addToHistory({
+                    url: images[i],
+                    filename: `tiktok-photo-${i + 1}.jpg`,
+                    thumbnail: images[i],
+                    title: title,
+                    type: 'Foto',
+                    date: new Date().toISOString()
+                });
+                
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+
+            btn.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+                <span>Selesai!</span>
+            `;
+
+            showToast('Download Selesai', `${images.length} foto berhasil diunduh! Cek folder Download Anda.`, 'success', false, 3000);
+
+            setTimeout(() => {
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }, 2000);
+        }
+
+        async function executeDownload(url, filename) {
+            try {
+                // Coba download pakai fetch + blob
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = filename;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                
+                // Cleanup
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(blobUrl);
+                }, 100);
+                
+                return true;
+            } catch (error) {
+                console.error('Download error:', error);
+                // Fallback: coba method lama
+                try {
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    a.target = '_blank';
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    return true;
+                } catch (err) {
+                    // Last resort: buka di tab baru
+                    window.open(url, '_blank');
+                    return false;
+                }
+            }
+        }
+
+        // ================== HISTORY FUNCTIONS ==================
+        function addToHistory(item) {
+            let history = JSON.parse(localStorage.getItem('downloadHistory') || '[]');
+            history.unshift(item);
+            
+            if (history.length > 50) {
+                history = history.slice(0, 50);
+            }
+            
+            localStorage.setItem('downloadHistory', JSON.stringify(history));
+        }
+
+        function loadHistory() {
+            const historyList = document.getElementById('history-list');
+            const history = JSON.parse(localStorage.getItem('downloadHistory') || '[]');
+
+            historyList.innerHTML = '';
+
+            if (history.length === 0) {
+                historyList.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M13,2.05V5.08C16.39,5.57 19,8.47 19,12C19,12.9 18.82,13.75 18.5,14.54L21.12,16.07C21.68,14.83 22,13.45 22,12C22,6.82 18.05,2.55 13,2.05M12,19C8.13,19 5,15.87 5,12C5,8.47 7.61,5.57 11,5.08V2.05C5.94,2.55 2,6.81 2,12A10,10 0 0,0 12,22C15.3,22 18.23,20.39 20.05,17.91L17.45,16.38C16.17,18 14.21,19 12,19Z"/>
+                        </svg>
+                        <h3>Belum Ada Riwayat</h3>
+                        <p>Download video atau audio untuk melihat riwayatnya disini</p>
+                    </div>
+                `;
+                return;
+            }
+
+            history.forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.onclick = () => window.open(item.url, '_blank');
+                
+                const date = new Date(item.date);
+                const formattedDate = date.toLocaleDateString('id-ID', { 
+                    day: 'numeric', 
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                historyItem.innerHTML = `
+                    <img src="${item.thumbnail || 'https://via.placeholder.com/70'}" class="history-thumbnail" alt="Thumbnail">
+                    <div class="history-info">
+                        <div class="history-title">${item.title || item.filename}</div>
+                        <div class="history-meta">
+                            <span class="history-badge">${item.type}</span>
+                            <span>${formattedDate}</span>
+                        </div>
+                    </div>
+                `;
+                historyList.appendChild(historyItem);
+            });
+        }
+
+        function clearHistory() {
+            if (confirm('Hapus semua riwayat download?')) {
+                localStorage.removeItem('downloadHistory');
+                loadHistory();
+                showToast('Berhasil', 'Riwayat download telah dihapus', 'success');
+            }
+        }
+
+        // ================== UTILITY FUNCTIONS ==================
+        function formatDuration(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        function showError(message, elementId) {
+            const errorDiv = document.getElementById(elementId);
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            
+            setTimeout(() => {
+                errorDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        function showToast(title, message, type = 'success', showProgress = false, duration = 3000) {
+            const toast = document.getElementById('toast');
+            const toastTitle = document.getElementById('toast-title');
+            const toastMessage = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+            const progressBar = document.getElementById('toast-progress-bar');
+
+            toastTitle.textContent = title;
+            toastMessage.textContent = message;
+
+            // Set icon based on type
+            toastIcon.className = 'toast-icon ' + type;
+            let iconPath = '';
+            if (type === 'success') {
+                iconPath = 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z';
+            } else if (type === 'error') {
+                iconPath = 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z';
+            } else if (type === 'info') {
+                iconPath = 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z';
+            }
+            toastIcon.innerHTML = `<path d="${iconPath}"/>`;
+
+            toast.classList.add('show');
+
+            if (showProgress) {
+                progressBar.style.width = '100%';
+                progressBar.style.transition = `width ${duration}ms linear`;
+                setTimeout(() => {
+                    progressBar.style.width = '0%';
+                }, 50);
+            }
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                progressBar.style.width = '100%';
+                progressBar.style.transition = 'none';
+            }, duration);
+        }
+
+        // ================== EVENT LISTENERS ==================
+        document.getElementById('tt-url').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('download-btn').click();
+            }
+        });
+
+        document.getElementById('settings-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeSettings();
+            }
+        });
+
+        document.getElementById('redeem-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeRedeemModal();
+            }
+        });
+
+        document.getElementById('history-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeHistoryModal();
+            }
+        });
+
+        document.getElementById('download-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDownloadModal();
+            }
+        });
+
+        document.getElementById('donation-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDonationModal();
+            }
+        });
+
+        document.getElementById('news-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeNewsModal();
+            }
+        });
+
+        document.getElementById('news-detail-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeNewsDetailModal();
+            }
+        });
+
+        document.getElementById('redeem-code-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                redeemCode();
+            }
+        });
+
+        // Prevent zoom on double tap (iOS)
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(event) {
+            const now = Date.now();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+    </script>
+
+    <!-- News Modal - List -->
+    <div class="modal" id="news-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">📰 Berita & Event</div>
+                <div class="close-btn" onclick="closeNewsModal()">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <p class="setting-description">Event dan pengumuman terbaru dari developer</p>
+
+            <div class="news-list" id="news-list">
+                <div class="empty-news">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M20 11H4V8h16m0 7H4v-3h16m0 7H4v-3h16M3 5v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2z"/>
+                    </svg>
+                    <h3 style="margin-bottom: 8px;">Belum Ada Berita</h3>
+                    <p>Developer belum menambahkan berita atau event</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- News Detail Modal -->
+    <div class="modal" id="news-detail-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Detail Berita</div>
+                <div class="close-btn" onclick="closeNewsDetailModal()">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div id="news-detail-content">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Donation Modal -->
+    <div class="modal" id="donation-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">💝 Donasi untuk Developer</div>
+                <div class="close-btn" onclick="closeDonationModal()">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <p class="setting-description">Dukung pengembangan VTD dengan donasi via DANA. Pilih nominal donasi:</p>
+
+            <div class="donation-grid">
+                <div class="donation-option" onclick="donate(2000, 'https://link.dana.id/minta?full_url=https://qr.dana.id/v1/281012092026021589320330')">
+                    <div class="donation-amount">Rp 2K</div>
+                    <div class="donation-label">Donasi Kecil</div>
+                </div>
+                <div class="donation-option" onclick="donate(5000, 'https://link.dana.id/minta?full_url=https://qr.dana.id/v1/281012092026021589075547')">
+                    <div class="donation-amount">Rp 5K</div>
+                    <div class="donation-label">Dukungan Ringan</div>
+                </div>
+                <div class="donation-option" onclick="donate(10000, 'https://link.dana.id/minta?full_url=https://qr.dana.id/v1/281012092026021547593584')">
+                    <div class="donation-amount">Rp 10K</div>
+                    <div class="donation-label">Donasi Sedang</div>
+                </div>
+                <div class="donation-option" onclick="donate(25000, 'https://link.dana.id/minta?full_url=https://qr.dana.id/v1/281012092026021530578115')">
+                    <div class="donation-amount">Rp 25K</div>
+                    <div class="donation-label">Dukungan Besar</div>
+                </div>
+                <div class="donation-option" onclick="donate(50000, 'https://link.dana.id/minta?full_url=https://qr.dana.id/v1/281012092026021547377355')">
+                    <div class="donation-amount">Rp 50K</div>
+                    <div class="donation-label">Donasi Premium</div>
+                </div>
+                <div class="donation-option" onclick="donate(100000, 'https://link.dana.id/minta?full_url=https://qr.dana.id/v1/281012092026021543163407')">
+                    <div class="donation-amount">Rp 100K</div>
+                    <div class="donation-label">Supporter Utama</div>
+                </div>
+            </div>
+
+            <div class="donation-note">
+                Terimakasih donasinya, berapapun donasi yang diberikan itu sangat berarti bagi developer dan sebagai semangat untuk terus berinovasi.
+            </div>
+        </div>
+    </div>
+</body>
+</html>
